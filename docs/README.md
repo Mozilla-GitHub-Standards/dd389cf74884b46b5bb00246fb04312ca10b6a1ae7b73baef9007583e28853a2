@@ -49,4 +49,4 @@ and makes use easier.
 
 ## Logging
 
-All logs will be structured as JSON and output to `stderr`.
+All logs will be output to `stderr`.
