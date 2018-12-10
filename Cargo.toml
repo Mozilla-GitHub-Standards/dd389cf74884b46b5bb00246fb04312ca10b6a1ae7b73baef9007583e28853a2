@@ -1,0 +1,6 @@
+[package]
+name = "mozdef_proxy"
+version = "0.1.0"
+authors = ["Emma Rose <emrose@mozilla.com>"]
+
+[dependencies]
