@@ -1,12 +1,4 @@
-extern crate clap;
-extern crate env_logger;
-extern crate iron;
-#[macro_use] extern crate log;
-extern crate serde;
-#[macro_use] extern crate serde_derive;
-extern crate serde_json;
-
-
+use log::error;
 use env_logger::{Builder, Target};
 
 fn main() {
