@@ -30,3 +30,29 @@ impl<T> Capability<Enqueue<T>> for SQS
     Ok(())
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  use rusoto_mock;
+  use serde_derive::{Deserialize, Serialize};
+
+
+  #[derive(PartialEq, Eq, Serialize)]
+  struct TestData {
+    pub id: u32,
+    pub name: String,
+  }
+
+  #[test]
+  fn can_queue_data_into_sqs() {
+    let data = TestData {
+      id: 9001,
+      name: "test data".to_string(),
+    };
+    let sqs = SQS::new();
+
+    assert!(sqs.perform(Enqueue(data)).is_ok());
+  }
+}
