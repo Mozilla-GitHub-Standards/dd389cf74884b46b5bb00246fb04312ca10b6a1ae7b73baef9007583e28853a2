@@ -4,7 +4,7 @@ use futures::{
 };
 use rusoto_core::request::DispatchSignedRequest;
 use rusoto_credential::{AwsCredentials, CredentialsError, ProvideAwsCredentials};
-use rusoto_sqs::SqsClient;
+use rusoto_sqs::{Sqs, SqsClient};
 use serde::Serialize;
 use serde_derive::Serialize;
 
@@ -18,21 +18,22 @@ pub struct Enqueue<T>(T);
 pub enum EnqueueError{}
 
 /// SQS supports enqueueing event data to Amazon SQS.
-pub struct SQS {
-  client: SqsClient,
+pub struct SQS<S> {
+  client: S,
 }
 
-impl SQS {
+impl<S> SQS<S> {
   /// Construct a new SQS configuration.
-  pub fn new(client: SqsClient) -> Self {
+  pub fn new(client: S) -> Self {
     SQS{
       client: client,
     }
   }
 }
 
-impl<T> Capability<Enqueue<T>> for SQS
-  where T: Serialize,
+impl<S, T> Capability<Enqueue<T>> for SQS<S>
+  where S: Sqs,
+        T: Serialize,
 {
   type Output = Result<(), EnqueueError>;
 
