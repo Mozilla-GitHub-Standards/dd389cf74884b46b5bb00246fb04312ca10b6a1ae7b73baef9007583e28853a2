@@ -29,6 +29,7 @@ POST /
 | severity | string | One of DEBUG, INFO, NOTICE, WARNING, ERROR, CRITICAL, ALERT, EMERGENCY | WARNING |
 | process  | string | The name of the process sending the log | patchesscanner |
 | summary  | string | A human-readable explanation of the event data | "results of vuln scan" |
+| tags     | []string | An array of string tags to associate with the event | `["vulnerability", "clair"]` |
 | details  | object | Any JSON-serialized data associated with the event | `{"vulnerabilities": [...]}` |
 
 #### Response

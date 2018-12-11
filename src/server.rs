@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::convert::From;
 
 use chrono::prelude::*;
 use iron::{
@@ -38,6 +39,7 @@ pub struct ClientEvent {
   pub severity: Severity,
   pub process: String,
   pub summary: String,
+  pub tags: Vec<String>,
   pub details: HashMap<String, Value>,
 }
 
@@ -49,10 +51,9 @@ struct MozDefEvent {
   pub severity: Severity,
   pub process: String,
   pub summary: String,
-  pub details: HashMap<String, Value>,
-  pub processid: u32,
-  pub source: &'static str,
   pub tags: Vec<String>,
+  pub details: HashMap<String, Value>,
+  pub source: &'static str,
   pub timestamp: DateTime<Local>,
   pub utctimestamp: DateTime<Utc>,
 }
@@ -71,5 +72,22 @@ impl Proxy {
 impl Handler for Proxy {
   fn handle(&self, req: &mut Request) -> IronResult<Response> {
     Ok(Response::with(Status::Ok))
+  }
+}
+
+impl From<ClientEvent> for MozDefEvent {
+  fn from(event: ClientEvent) -> MozDefEvent {
+    MozDefEvent {
+      category: event.category,
+      hostname: event.hostname,
+      severity: event.severity,
+      process: event.process,
+      summary: event.summary,
+      tags: event.tags,
+      details: event.details,
+      source: MOZDEF_SOURCE,
+      timestamp: Local::now(),
+      utctimestamp: Utc::now(),
+    }
   }
 }
