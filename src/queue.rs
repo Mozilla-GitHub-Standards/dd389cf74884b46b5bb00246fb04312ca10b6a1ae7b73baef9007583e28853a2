@@ -1,3 +1,4 @@
+use rusoto_sqs::SqsClient;
 use serde::Serialize;
 use serde_derive::Serialize;
 
@@ -11,18 +12,29 @@ pub struct Enqueue<T>(T);
 pub enum EnqueueError{}
 
 /// SQS supports enqueueing event data to Amazon SQS.
-pub struct SQS {
+pub struct SQS<P, D>
+  where P: rusoto_credential::ProvideAwsCredentials,
+        D: rusoto_core::request::DispatchSignedRequest,
+{
+  client: SqsClient<P, D>,
 }
 
-impl SQS {
+impl<P, D> SQS<P, D>
+  where P: rusoto_credential::ProvideAwsCredentials,
+        D: rusoto_core::request::DispatchSignedRequest,
+{
   /// Construct a new SQS configuration.
-  pub fn new() -> Self {
-    SQS{}
+  pub fn new(client: SqsClient<P, D>) -> Self {
+    SQS{
+      client: client,
+    }
   }
 }
 
-impl<T> Capability<Enqueue<T>> for SQS
-  where T: Serialize
+impl<P, D, T> Capability<Enqueue<T>> for SQS<P, D>
+  where P: rusoto_credential::ProvideAwsCredentials,
+        D: rusoto_core::request::DispatchSignedRequest,
+        T: Serialize,
 {
   type Output = Result<(), EnqueueError>;
 
@@ -35,7 +47,6 @@ impl<T> Capability<Enqueue<T>> for SQS
 mod tests {
   use super::*;
 
-  use rusoto_mock;
   use serde_derive::{Deserialize, Serialize};
 
 
@@ -51,7 +62,11 @@ mod tests {
       id: 9001,
       name: "test data".to_string(),
     };
-    let sqs = SQS::new();
+    let client = rusoto_sqs::SqsClient::new_with(
+      rusoto_mock::MockRequestDispatcher::default(),
+      rusoto_mock::MockCredentialsProvider,
+      Default::default());
+    let sqs = SQS::new(client);
 
     assert!(sqs.perform(Enqueue(data)).is_ok());
   }
