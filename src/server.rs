@@ -59,17 +59,22 @@ struct MozDefEvent {
 }
 
 /// A request handler that enqueues events sent by clients for consumption by MozDef.
-pub(crate) struct Proxy {
+pub struct Proxy<Q> {
+  message_queue: Q,
 }
 
-impl Proxy {
+impl<Q> Proxy<Q> {
   /// Construct a new proxy server.
-  pub fn new() -> Self {
-    Proxy{}
+  pub fn new(message_queue: Q) -> Self {
+    Proxy{
+      message_queue: message_queue,
+    }
   }
 }
 
-impl Handler for Proxy {
+impl<Q> Handler for Proxy<Q>
+  where Q: Capability<Enqueue<MozDefEvent>>,
+{
   fn handle(&self, req: &mut Request) -> IronResult<Response> {
     Ok(Response::with(Status::Ok))
   }
