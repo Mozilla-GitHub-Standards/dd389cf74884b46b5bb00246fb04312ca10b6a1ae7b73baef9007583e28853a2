@@ -4,7 +4,7 @@ use futures::{
 };
 use rusoto_core::request::DispatchSignedRequest;
 use rusoto_credential::{AwsCredentials, CredentialsError, ProvideAwsCredentials};
-use rusoto_sqs::{Sqs, SqsClient};
+use {Sqs, SqsClient};
 use serde::Serialize;
 use serde_derive::Serialize;
 
@@ -46,6 +46,8 @@ impl<S, T> Capability<Enqueue<T>> for SQS<S>
 mod tests {
   use super::*;
 
+  use rusoto_core::RusotoFuture;
+  use rusoto_sqs::*;
   use serde_derive::{Deserialize, Serialize};
 
 
@@ -55,18 +57,181 @@ mod tests {
     pub name: String,
   }
 
+  struct MockSqs {
+  }
+
   #[test]
   fn can_queue_data_into_sqs() {
     let data = TestData {
       id: 9001,
       name: "test data".to_string(),
     };
-    let client = rusoto_sqs::SqsClient::new_with(
+    let client = SqsClient::new_with(
       rusoto_mock::MockRequestDispatcher::default(),
       rusoto_mock::MockCredentialsProvider,
       Default::default());
     let sqs = SQS::new(client);
 
     assert!(sqs.perform(Enqueue(data)).is_ok());
+  }
+
+  impl Sqs for MockSqs {
+    fn add_permission(
+      &self,
+      _: AddPermissionRequest
+    ) -> RusotoFuture<(), AddPermissionError> 
+    {
+      From::from(Err(AddPermissionError::Validation("not implemented".to_string())))
+    }
+    
+    fn change_message_visibility(
+      &self,
+      _: ChangeMessageVisibilityRequest
+    ) -> RusotoFuture<(), ChangeMessageVisibilityError> 
+    {
+      From::from(Err(ChangeMessageVisibilityBatchError::Validation("not implemented".to_string())))
+    }
+
+    fn change_message_visibility_batch(
+      &self,
+      _: ChangeMessageVisibilityBatchRequest
+    ) -> RusotoFuture<
+      ChangeMessageVisibilityBatchResult,
+      ChangeMessageVisibilityBatchError> 
+    {
+      From::from(Err(ChangeMessageVisibilityBatchError::Validation("not implemented".to_string())))
+    }
+
+    fn create_queue(
+      &self,
+      _: CreateQueueRequest
+    ) -> RusotoFuture<CreateQueueResult, CreateQueueError>
+    {
+      From::from(Err(CreateQueueError::Validation("not implemented".to_string())))
+    }
+
+    fn delete_message(
+      &self,
+      _: DeleteMessageRequest
+    ) -> RusotoFuture<(), DeleteMessageError>
+    {
+      From::from(Err(DeleteMessageError::Validation("not implemented".to_string())))
+    }
+
+    fn delete_message_batch(
+      &self,
+      _: DeleteMesssageBatch
+    ) -> RusotoFuture<DeleteMessageBatchResult, DeleteMessageBatchError>
+    {
+      From::from(Err(DeleteMessageBatchError::Validation("not implemented".to_string())))
+    }
+
+    fn delete_queue(
+      &self,
+      _: DeleteQueueRequest
+    ) -> RusotoFuture<(), DeleteQueueError>
+    {
+      From::from(Err(DeleteQueueError::Validation("not implemented".to_string())))
+    }
+
+    fn get_queue_attributes(
+      &self,
+      _: GetQueueAttributesRequest
+    ) -> RusotoFuture<GetQueueAttributesResult, GetQueueAttributesError>
+    {
+      From::from(Err(GetQueueAttributesError::Validation("not implemented".to_string())))
+    }
+
+    fn get_queue_url(
+      &self,
+      _: GetQueueUrlRequest
+    ) -> RusotoFuture<GetQueueUrlResult, GetQueueUrlError>
+    {
+      From::from(Err(GetQueueUrlError::Validation("not implemented".to_string())))
+    }
+
+    fn list_dead_letter_source_queues(
+      &self,
+      _: ListDeadLetterSourceQueuesRequest
+    ) -> RusotoFuture<ListDeadLetterSourceQueuesResult, ListDeadLetterSourceQueuesError>
+    {
+      From::from(Err(ListDeadLetterSourceQueuesError::Validation("not implemented".to_string())))
+    }
+
+    fn list_queue_tags(
+      &self,
+      _: ListQueueTagsRequest
+    ) -> RusotoFuture<ListQueueTagsResult, ListQueueTagsError>
+    {
+      From::from(Err(ListQueueTagsError::Validation("not implemented".to_string())))
+    }
+
+    fn list_queues(
+      &self,
+      _: ListQueuesRequest
+    ) -> RusotoFuture<ListQueuesResult, ListQueuesError>
+    {
+      From::from(Err(ListQueuesError::Validation("not implemented".to_string())))
+    }
+
+    fn purge_queue(
+      &self,
+      _: PurgeQueueRequest
+    ) -> RusotoFuture<(), PurgeQueueError>
+    {
+      From::from(Err(PurgeQueueError::Validation("not implemented".to_string())))
+    }
+
+    fn receive_message(
+      &self, 
+      _: ReceiveMessageRequest
+    ) -> RusotoFuture<ReceiveMessageResult, ReceiveMessageError>
+    {
+      From::from(Err(ReceiveMessageError::Validation("not implemented".to_string())))
+    }
+
+    fn remove_permission(
+      &self,
+      _: RemovePermissionRequest
+    ) -> RusotoFuture<(), RemovePermissionError>
+    {
+      From::from(Err(RemovePermissionError::Validation("not implemented".to_string())))
+    }
+
+    fn send_message(
+      &self,
+      _: SendMessageRequest
+    ) -> RusotoFuture<SendMessageResult, SendMessageError>
+    {
+      From::from(Err(SendMessageError::Validation("not implemented".to_string())))
+    }
+
+    fn send_message_batch(
+      &self,
+      _: SendMessageBatchRequest
+    ) -> RusotoFuture<SendMessageBatchResult, SendMessageBatchError>
+    {
+      From::from(Err(SendMessageBatchError::Validation("not implemented".to_string())))
+    }
+
+    fn set_queue_attributes(
+      &self,
+      _: SetQueueAttributesRequest
+    ) -> RusotoFuture<(), SetQueueAttributesError>
+    {
+      From::from(Err(SetQueueAttributesError::Validation("not implemented".to_string())))
+    }
+
+    fn tag_queue(&self, input: TagQueueRequest) -> RusotoFuture<(), TagQueueError> {
+      From::from(Err(TagQueueError::Validation("not implemented".to_string())))
+    }
+
+    fn untag_queue(
+      &self, 
+      _: UntagQueueRequest
+    ) -> RusotoFuture<(), UntagQueueError>
+    {
+      From::from(Err(UntagQueueError::Validation("not implemented".to_string())))
+    }
   }
 }
