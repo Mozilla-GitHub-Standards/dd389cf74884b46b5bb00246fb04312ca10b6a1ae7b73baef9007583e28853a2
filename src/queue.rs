@@ -4,7 +4,7 @@ use futures::{
 };
 use rusoto_core::request::DispatchSignedRequest;
 use rusoto_credential::{AwsCredentials, CredentialsError, ProvideAwsCredentials};
-use {Sqs, SqsClient};
+use rusoto_sqs::{Sqs, SqsClient};
 use serde::Serialize;
 use serde_derive::Serialize;
 
@@ -45,6 +45,8 @@ impl<S, T> Capability<Enqueue<T>> for SQS<S>
 #[cfg(test)]
 mod tests {
   use super::*;
+  
+  use std::cell::RefCell;
 
   use rusoto_core::RusotoFuture;
   use rusoto_sqs::*;
@@ -57,7 +59,13 @@ mod tests {
     pub name: String,
   }
 
+  struct Message {
+    pub body: String,
+    pub queue: String,
+  }
+
   struct MockSqs {
+    pub messages: RefCell<Vec<Message>>,
   }
 
   #[test]
@@ -89,7 +97,7 @@ mod tests {
       _: ChangeMessageVisibilityRequest
     ) -> RusotoFuture<(), ChangeMessageVisibilityError> 
     {
-      From::from(Err(ChangeMessageVisibilityBatchError::Validation("not implemented".to_string())))
+      From::from(Err(ChangeMessageVisibilityError::Validation("not implemented".to_string())))
     }
 
     fn change_message_visibility_batch(
@@ -120,7 +128,7 @@ mod tests {
 
     fn delete_message_batch(
       &self,
-      _: DeleteMesssageBatch
+      _: DeleteMessageBatchRequest
     ) -> RusotoFuture<DeleteMessageBatchResult, DeleteMessageBatchError>
     {
       From::from(Err(DeleteMessageBatchError::Validation("not implemented".to_string())))
@@ -200,10 +208,15 @@ mod tests {
 
     fn send_message(
       &self,
-      _: SendMessageRequest
+      req: SendMessageRequest
     ) -> RusotoFuture<SendMessageResult, SendMessageError>
     {
-      From::from(Err(SendMessageError::Validation("not implemented".to_string())))
+      let mut received = self.messages.borrow_mut();
+      received.push(Message {
+        body: req.message_body,
+        queue: req.queue_url,
+      });
+      From::from(Ok(Default::default()))
     }
 
     fn send_message_batch(
