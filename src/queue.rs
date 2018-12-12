@@ -20,13 +20,15 @@ pub enum EnqueueError{}
 /// SQS supports enqueueing event data to Amazon SQS.
 pub struct SQS<S> {
   client: S,
+  queue: String,
 }
 
 impl<S> SQS<S> {
   /// Construct a new SQS configuration.
-  pub fn new(client: S) -> Self {
+  pub fn new(client: S, queue_url: String) -> Self {
     SQS{
       client: client,
+      queue: queue_url,
     }
   }
 }
