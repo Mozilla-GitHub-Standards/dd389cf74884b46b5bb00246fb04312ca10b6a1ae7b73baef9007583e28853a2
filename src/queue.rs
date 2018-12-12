@@ -4,7 +4,7 @@ use futures::{
 };
 use rusoto_core::request::DispatchSignedRequest;
 use rusoto_credential::{AwsCredentials, CredentialsError, ProvideAwsCredentials};
-use rusoto_sqs::{Sqs, SqsClient};
+use rusoto_sqs::{SendMessageError, SendMessageRequest, Sqs, SqsClient};
 use serde::Serialize;
 use serde_derive::Serialize;
 
@@ -37,10 +37,22 @@ impl<S, T> Capability<Enqueue<T>> for SQS<S>
   where S: Sqs,
         T: Serialize,
 {
-  type Output = Result<(), EnqueueError>;
+  type Output = Result<(), SendMessageError>;
 
   fn perform(&self, op: Enqueue<T>) -> Self::Output {
-    Ok(())
+    let message_body = serde_json::to_string(&op.0).unwrap();
+    let request = SendMessageRequest {
+      message_body: message_body,
+      queue_url: self.queue.clone(),
+      delay_seconds: None,
+      message_attributes: None,
+      message_deduplication_id: None,
+      message_group_id: None,
+    };
+    self.client
+      .send_message(request)
+      .sync()
+      .map(|_| ())
   }
 }
 
