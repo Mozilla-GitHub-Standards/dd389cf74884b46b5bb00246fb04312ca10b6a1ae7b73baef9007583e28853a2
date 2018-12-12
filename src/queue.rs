@@ -55,12 +55,13 @@ mod tests {
   use serde_derive::{Deserialize, Serialize};
 
 
-  #[derive(PartialEq, Eq, Serialize)]
+  #[derive(Debug, PartialEq, Eq, Deserialize, Serialize)]
   struct TestData {
     pub id: u32,
     pub name: String,
   }
 
+  #[derive(Clone)]
   struct Message {
     pub body: String,
     pub queue: String,
@@ -71,7 +72,7 @@ mod tests {
   }
 
   #[test]
-  fn can_queue_data_into_sqs() {
+  fn can_queue_data() {
     let data = TestData {
       id: 9001,
       name: "test data".to_string(),
@@ -80,12 +81,39 @@ mod tests {
       rusoto_mock::MockRequestDispatcher::default(),
       rusoto_mock::MockCredentialsProvider,
       Default::default());
-    let sqs = SQS::new(client);
+    let sqs = SQS::new(client, "doesn't matter".to_string());
 
     assert!(sqs.perform(Enqueue(data)).is_ok());
   }
 
-  impl Sqs for MockSqs {
+  #[test]
+  fn messages_get_sent_to_sqs() {
+    let data = TestData {
+      id: 10000,
+      name: "test".to_string(),
+    };
+    let client = MockSqs::new();
+    let sqs = SQS::new(&client, "queue_name".to_string());
+
+    assert!(sqs.perform(Enqueue(&data)).is_ok());
+    assert_eq!(client.messages.borrow().len(), 1);
+
+    let Message{ body, queue } = client.messages.borrow()[0].clone(); 
+    let recvd: TestData = serde_json::from_str(&body).unwrap();
+
+    assert_eq!(queue, "queue_name".to_string());
+    assert_eq!(recvd, data);
+  }
+
+  impl MockSqs {
+    pub fn new() -> Self {
+      MockSqs {
+        messages: RefCell::new(Vec::new()),
+      }
+    }
+  }
+
+  impl Sqs for &MockSqs {
     fn add_permission(
       &self,
       _: AddPermissionRequest
