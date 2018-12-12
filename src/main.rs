@@ -1,5 +1,6 @@
 mod capability;
 mod server;
+mod testing;
 mod queue;
 
 use env_logger::{Builder, Target};
