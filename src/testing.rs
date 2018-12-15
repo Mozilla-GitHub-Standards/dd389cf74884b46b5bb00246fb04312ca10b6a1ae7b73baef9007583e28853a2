@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::sync::{Arc, Mutex};
 
 use rusoto_core::RusotoFuture;
 use rusoto_sqs::*;
@@ -10,13 +10,13 @@ pub struct Message {
 }
 
 pub struct MockSqs {
-  pub messages: RefCell<Vec<Message>>,
+  pub messages: Arc<Mutex<Vec<Message>>>,
 }
 
 impl MockSqs {
   pub fn new() -> Self {
     MockSqs {
-      messages: RefCell::new(Vec::new()),
+      messages: Arc::new(Mutex::new(Vec::new())),
     }
   }
 }
@@ -149,7 +149,7 @@ impl Sqs for &MockSqs {
     req: SendMessageRequest
   ) -> RusotoFuture<SendMessageResult, SendMessageError>
   {
-    let mut received = self.messages.borrow_mut();
+    let mut received = self.messages.lock().unwrap();
     received.push(Message {
       body: req.message_body,
       queue: req.queue_url,

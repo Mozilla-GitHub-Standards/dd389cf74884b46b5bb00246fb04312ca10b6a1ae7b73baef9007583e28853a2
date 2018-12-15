@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use futures::{
   future::FutureResult,
   Future,
@@ -12,7 +14,7 @@ use crate::capability::Capability;
 
 
 /// An operation for enqueuing data e.g. into SQS.
-pub struct Enqueue<T>(T);
+pub struct Enqueue<T>(pub T);
 
 /// Errors that may be encountered trying to queue an event.
 pub enum EnqueueError{}
@@ -25,10 +27,10 @@ pub struct SQS<S> {
 
 impl<S> SQS<S> {
   /// Construct a new SQS configuration.
-  pub fn new(client: S, queue_url: String) -> Self {
+  pub fn new<T: Into<String>>(client: S, queue_url: T) -> Self {
     SQS{
       client: client,
-      queue: queue_url,
+      queue: queue_url.into(),
     }
   }
 }
@@ -56,11 +58,21 @@ impl<S, T> Capability<Enqueue<T>> for SQS<S>
   }
 }
 
+impl<S, T> Capability<Enqueue<T>> for Arc<Mutex<SQS<S>>>
+  where S: Sqs,
+        T: Serialize,
+{
+  type Output = Result<(), SendMessageError>;
+
+  fn perform(&self, op: Enqueue<T>) -> Self::Output {
+    let sqs = self.lock().unwrap();
+    sqs.perform(op)
+  }
+}
+
 #[cfg(test)]
 pub mod tests {
   use super::*;
-  
-  use std::cell::RefCell;
 
   use rusoto_sqs::SqsClient;
   use serde_derive::{Deserialize, Serialize};
@@ -99,9 +111,12 @@ pub mod tests {
     let sqs = SQS::new(&client, "queue_name".to_string());
 
     assert!(sqs.perform(Enqueue(&data)).is_ok());
-    assert_eq!(client.messages.borrow().len(), 1);
 
-    let Message{ body, queue } = client.messages.borrow()[0].clone(); 
+    let messages = client.messages.lock().unwrap();
+
+    assert_eq!(messages.len(), 1);
+
+    let Message{ body, queue } = messages[0].clone(); 
     let recvd: TestData = serde_json::from_str(&body).unwrap();
 
     assert_eq!(queue, "queue_name".to_string());

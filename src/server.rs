@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 use std::convert::From;
+use std::error::Error;
+use std::fmt;
 
 use chrono::prelude::*;
 use iron::{
@@ -7,6 +9,7 @@ use iron::{
   middleware::Handler,
   status::Status,
 };
+use log::{error, debug};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -32,7 +35,7 @@ pub enum Severity {
 }
 
 /// Contains all of the information that a client must send to queue an event.
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ClientEvent {
   pub category: String,
   pub hostname: String,
@@ -44,8 +47,8 @@ pub struct ClientEvent {
 }
 
 /// Contains all of the information MozDef expects to be in an event.
-#[derive(Debug, Serialize)]
-struct MozDefEvent {
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct MozDefEvent {
   pub category: String,
   pub hostname: String,
   pub severity: Severity,
@@ -63,6 +66,27 @@ pub struct Proxy<Q> {
   message_queue: Q,
 }
 
+#[derive(Clone, Copy, Debug)]
+enum APIError {
+  InvalidRequestData,
+  InternalError,
+}
+
+impl fmt::Display for APIError {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    match *self {
+      APIError::InvalidRequestData => write!(f, "Invalid request data"),
+      APIError::InternalError      => write!(f, "Internal error"),
+    }
+  }
+}
+
+impl Error for APIError {
+  fn description(&self) -> &str {
+    "API Error"
+  }
+}
+
 impl<Q> Proxy<Q> {
   /// Construct a new proxy server.
   pub fn new(message_queue: Q) -> Self {
@@ -72,11 +96,49 @@ impl<Q> Proxy<Q> {
   }
 }
 
-impl<Q> Handler for Proxy<Q>
-  where Q: Capability<Enqueue<MozDefEvent>>,
+impl<Q, E> Handler for Proxy<Q>
+  where Q: Capability<Enqueue<MozDefEvent>, Output = Result<(), E>> + Send + Sync + 'static,
+        E: Error,
 {
   fn handle(&self, req: &mut Request) -> IronResult<Response> {
-    Ok(Response::with(Status::Ok))
+    let body = req.get::<bodyparser::Struct<ClientEvent>>()
+      .map_err(|_| IronError::new(
+        APIError::InvalidRequestData,
+        (Status::BadRequest, "Invalid request data")
+      ))?;
+
+    if body.is_none() {
+      return Err(IronError::new(
+        APIError::InvalidRequestData,
+        (Status::BadRequest, "Invalid request data")
+      ));
+    }
+
+    let evt: MozDefEvent = From::from(body.unwrap());
+    self.message_queue
+      .lock()
+      .map_err(|e| {
+        error!("Could not get lock on mutex. {}", e);
+        ()
+      })
+      .map(|queue| -> Result<(), ()> {
+        let res = queue.perform(Enqueue(evt)) as Result<(), E>;
+        res
+          .map(|_| {
+            debug!("Successfully enqueued message");
+            ()
+          })
+          .map_err(|e| {
+            error!("Failed to enqueue message: {}", e);
+            ()
+          })
+      })
+      .map_err(|_| IronError::new(
+        APIError::InternalError,
+        (Status::InternalServerError, "Failed to queue event")
+      ))?;
+
+    Ok(Response::with((Status::Ok, "Success")))
   }
 }
 
@@ -95,4 +157,20 @@ impl From<ClientEvent> for MozDefEvent {
       utctimestamp: Utc::now(),
     }
   }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  use std::collections::HashMap;
+
+  use iron::prelude::*;
+  use iron::status::Status;
+  use rusoto_sqs::SqsClient;
+
+  use crate::testing::{Message, MockSqs};
+  use crate::queue::SQS;
+
+
 }
