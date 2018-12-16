@@ -85,14 +85,14 @@ struct MozDefEvent {
 
 fn main() {
   // TODO:
-  // 1. Figure out how to handle AWS credentials in an acceptable way.
-  // 2. Create a real SqsClient, authenticate, assume role, etc. as necessary.
-  // 3. Write some tests.  Just make a best effort.
-  // 4. Throw in some logging.
-  // 5. Test it out in AWS!
+  // 1. Throw in some logging.
+  // 2. Test it out in AWS!
+  let credentials = rusoto_credential::EnvironmentProvider::default();
+  let requests = rusoto_core::request::HttpClient::new()
+    .expect("Could not create a signed request dispatcher for AWS.");
   let sqs_client = SqsClient::new_with(
-    rusoto_mock::MockRequestDispatcher::default(),
-    rusoto_mock::MockCredentialsProvider,
+    requests,
+    credentials,
     Default::default());
   let sqs = SQS::new(sqs_client, "test_queue");
   let proxy = Proxy::new(sqs);
