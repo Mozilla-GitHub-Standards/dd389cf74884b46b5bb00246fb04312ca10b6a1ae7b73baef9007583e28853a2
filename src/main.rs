@@ -21,7 +21,8 @@ trait Enqueue {
   fn queue(&self, data: &Self::Data) -> Result<(), Self::Error>;
 }
 
-pub struct Proxy {
+pub struct Proxy<S> {
+  message_queue: SQS<S>,
 }
 
 struct SQS<S> {
@@ -71,17 +72,33 @@ pub struct MozDefEvent {
 }
 
 fn main() {
-  let proxy = Proxy::new();
+  let sqs_client = SqsClient::new_with(
+    rusoto_mock::MockRequestDispatcher::default(),
+    rusoto_mock::MockCredentialsProvider,
+    Default::default());
+  let sqs = SQS::new(sqs_client, "test_queue");
+  let proxy = Proxy::new(sqs);
   iron::Iron::new(proxy).http("127.0.0.1:8080").unwrap();
 }
 
-impl Proxy {
-  pub fn new() -> Self {
-    Proxy {}
+impl<S> Proxy<S> {
+  pub fn new(queue: SQS<S>) -> Self {
+    Proxy {
+      message_queue: queue,
+    }
   }
 }
 
-impl Handler for Proxy {
+impl<S> SQS<S> {
+  pub fn new<T: Into<String>>(client: S, queue: T) -> Self {
+    SQS {
+      client: client,
+      queue_url: queue.into(),
+    }
+  }
+}
+
+impl<S> Handler for Proxy<S> {
   fn handle(&self, req: &mut Request) -> IronResult<Response> {
     let data = req.get::<bodyparser::Struct<ClientEvent>>()
       .map_err(|err| IronError::new(err, (Status::BadRequest, "Invalid request data")))
