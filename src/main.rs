@@ -87,8 +87,7 @@ struct MozDefEvent {
 
 fn main() {
   // TODO:
-  // 1. Throw in some logging.
-  // 2. Test it out in AWS!
+  // 1. Test it out in AWS!
 
   let mut logger = Builder::from_default_env();
   logger.target(Target::Stderr);
