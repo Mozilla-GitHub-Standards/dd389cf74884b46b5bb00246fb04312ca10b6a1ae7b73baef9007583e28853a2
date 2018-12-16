@@ -6,15 +6,28 @@ use iron::{
   prelude::*,
   status::Status,
 };
+use rusoto_sqs::{Sqs, SqsClient, SendMessageError, SendMessageRequest};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 
 
+/// The value of the `source` field in a `MozDefEvent`.
+const MOZDEF_SOURCE: &'static str  = "mozdef-proxy";
+
+trait Enqueue {
+  type Data;
+  type Error;
+
+  fn queue(&self, data: &Self::Data) -> Result<(), Self::Error>;
+}
+
 pub struct Proxy {
 }
 
-/// The value of the `source` field in a `MozDefEvent`.
-const MOZDEF_SOURCE: &'static str  = "mozdef-proxy";
+struct SQS<S> {
+  client: S,
+  queue_url: String,
+}
 
 /// Represents each of the possible severity levels for an event.
 /// Specified by RFC5424.
@@ -80,6 +93,29 @@ impl Handler for Proxy {
   }
 }
 
+impl<S> Enqueue for SQS<S>
+  where S: Sqs,
+{
+  type Data = MozDefEvent;
+  type Error = SendMessageError;
+
+  fn queue(&self, event: &Self::Data) -> Result<(), Self::Error> {
+    let body = serde_json::to_string(event).unwrap();
+    let request = SendMessageRequest {
+      message_body: body,
+      queue_url: self.queue_url.clone(),
+      delay_seconds: None,
+      message_attributes: None,
+      message_deduplication_id: None,
+      message_group_id: None,
+    };
+
+    self.client
+      .send_message(request)
+      .sync()
+      .map(|_| ())
+  }
+}
 
 impl From<ClientEvent> for MozDefEvent {
   fn from(event: ClientEvent) -> MozDefEvent {
