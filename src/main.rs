@@ -128,10 +128,10 @@ impl<S> Handler for Proxy<S>
     let event: MozDefEvent = From::from(data);
     println!("Got event {:?}", event);
 
-    // TODO:
-    // Actual SQS code goes here.
-
-    Ok(Response::with((Status::Ok, "Success")))
+    match self.message_queue.queue(&event) {
+      Err(err) => Err(IronError::new(err, (Status::InternalServerError, "An error occurred in the server"))),
+      Ok(_)    => Ok(Response::with((Status::Ok, "Success"))),
+    }
   }
 }
 
