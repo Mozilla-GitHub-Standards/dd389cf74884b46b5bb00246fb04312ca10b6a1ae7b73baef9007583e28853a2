@@ -5,5 +5,9 @@ authors = ["Emma Rose <emma.arcadia.rose@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+chrono = { version = "0.4", features = ["serde"] }
 iron = "^0.6"
 bodyparser = "^0.8"
+serde = "^1.0"
+serde_derive = "^1.0"
+serde_json = "^1.0"
