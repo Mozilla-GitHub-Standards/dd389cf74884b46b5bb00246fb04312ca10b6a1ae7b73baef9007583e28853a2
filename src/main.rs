@@ -14,6 +14,9 @@ use serde_json::Value;
 /// The value of the `source` field in a `MozDefEvent`.
 const MOZDEF_SOURCE: &'static str  = "mozdef-proxy";
 
+/// Implementors have the ability to enqueue some data into a queue of some kind.
+///
+/// Largely used as an interface around which we can build mocks for testing.
 trait Enqueue {
   type Data;
   type Error;
@@ -21,11 +24,20 @@ trait Enqueue {
   fn queue(&self, data: &Self::Data) -> Result<(), Self::Error>;
 }
 
+/// The main HTTP handler type.
 struct Proxy<S> {
+  // We describe the Proxy as completely generic over its input type.
+  // This does hypothetically leave room for instances of meaningless
+  // things like `Proxy<u8>`, but it's a good habit to be in, as it
+  // allows for better control over `S`'s trait bounds bounds in our own
+  // implementations.
   message_queue: SQS<S>,
 }
 
+/// A configuration of an Amazon SQS to write to.
 struct SQS<S> {
+  // Its fields are private because it performs external state mutation
+  // and thus cannot be thought of as a pure data type.
   client: S,
   queue_url: String,
 }
@@ -34,6 +46,7 @@ struct SQS<S> {
 /// Specified by RFC5424.
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 enum Severity {
+  // Enums automatically serialize to a string version of their names.
   DEBUG,
   INFO,
   NOTICE,
@@ -72,6 +85,11 @@ struct MozDefEvent {
 }
 
 fn main() {
+  // TODO:
+  // 1. Figure out how to handle AWS credentials in an acceptable way.
+  // 2. Create a real SqsClient, authenticate, assume role, etc. as necessary.
+  // 3. Write some tests.  Just make a best effort.
+  // 4. Test it out in AWS!
   let sqs_client = SqsClient::new_with(
     rusoto_mock::MockRequestDispatcher::default(),
     rusoto_mock::MockCredentialsProvider,
@@ -99,6 +117,8 @@ impl<S> SQS<S> {
 }
 
 impl<S> Handler for Proxy<S> 
+  // The `Iron` instance that `Handler` is passed to will run our `handle` method
+  // asynchronously, so we have to guarantee `S` is thread-safe.
   where S: Sqs + Send + Sync + 'static,
 {
   fn handle(&self, req: &mut Request) -> IronResult<Response> {
@@ -107,6 +127,9 @@ impl<S> Handler for Proxy<S>
       ?.unwrap();
     let event: MozDefEvent = From::from(data);
     println!("Got event {:?}", event);
+
+    // TODO:
+    // Actual SQS code goes here.
 
     Ok(Response::with((Status::Ok, "Success")))
   }
