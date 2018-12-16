@@ -1,0 +1,9 @@
+[package]
+name = "mozdef-proxy"
+version = "0.1.0"
+authors = ["Emma Rose <emma.arcadia.rose@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+iron = "^0.6"
+bodyparser = "^0.8"
