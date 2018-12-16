@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 
 use chrono::prelude::*;
+use env_logger::{Builder, Target};
 use iron::{
   middleware::Handler,
   prelude::*,
   status::Status,
 };
+use log::{info, error};
 use rusoto_sqs::{Sqs, SqsClient, SendMessageError, SendMessageRequest};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
@@ -87,6 +89,11 @@ fn main() {
   // TODO:
   // 1. Throw in some logging.
   // 2. Test it out in AWS!
+
+  let mut logger = Builder::from_default_env();
+  logger.target(Target::Stderr);
+  logger.init();
+
   let credentials = rusoto_credential::EnvironmentProvider::default();
   let requests = rusoto_core::request::HttpClient::new()
     .expect("Could not create a signed request dispatcher for AWS.");
@@ -95,8 +102,11 @@ fn main() {
     credentials,
     Default::default());
   let sqs = SQS::new(sqs_client, "test_queue");
+
   let proxy = Proxy::new(sqs);
-  iron::Iron::new(proxy).http("127.0.0.1:8080").unwrap();
+  let address = "127.0.0.1:8080";
+  info!("Running proxy server on {}", address);
+  iron::Iron::new(proxy).http(address).unwrap();
 }
 
 impl<S> Proxy<S> {
@@ -126,7 +136,6 @@ impl<S> Handler for Proxy<S>
       .map_err(|err| IronError::new(err, (Status::BadRequest, "Invalid request data")))
       ?.unwrap();
     let event: MozDefEvent = From::from(data);
-    println!("Got event {:?}", event);
 
     match self.message_queue.queue(&event) {
       Err(err) => Err(IronError::new(err, (Status::InternalServerError, "An error occurred in the server"))),
@@ -155,7 +164,14 @@ impl<S> Enqueue for SQS<S>
     self.client
       .send_message(request)
       .sync()
-      .map(|_| ())
+      .map(|_| {
+        info!("Successfully logged an event");
+        ()
+      })
+      .map_err(|err| {
+        error!("Failed to queue event: {}", err);
+        err
+      })
   }
 }
 
