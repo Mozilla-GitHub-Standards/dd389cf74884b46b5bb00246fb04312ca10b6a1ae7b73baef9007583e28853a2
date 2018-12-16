@@ -15,9 +15,8 @@ use serde_json::Value;
 const MOZDEF_SOURCE: &'static str  = "mozdef-proxy";
 
 /// Implementors have the ability to enqueue some data into a queue of some kind.
-///
-/// Largely used as an interface around which we can build mocks for testing.
 trait Enqueue {
+  // Largely used as an interface around which we can build mocks for testing.
   type Data;
   type Error;
 
