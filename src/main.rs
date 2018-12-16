@@ -21,7 +21,7 @@ trait Enqueue {
   fn queue(&self, data: &Self::Data) -> Result<(), Self::Error>;
 }
 
-pub struct Proxy<S> {
+struct Proxy<S> {
   message_queue: SQS<S>,
 }
 
@@ -33,7 +33,7 @@ struct SQS<S> {
 /// Represents each of the possible severity levels for an event.
 /// Specified by RFC5424.
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-pub enum Severity {
+enum Severity {
   DEBUG,
   INFO,
   NOTICE,
@@ -46,7 +46,7 @@ pub enum Severity {
 
 /// Contains all of the information that a client must send to queue an event.
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct ClientEvent {
+struct ClientEvent {
   pub category: String,
   pub hostname: String,
   pub severity: Severity,
@@ -58,7 +58,7 @@ pub struct ClientEvent {
 
 /// Contains all of the information MozDef expects to be in an event.
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct MozDefEvent {
+struct MozDefEvent {
   pub category: String,
   pub hostname: String,
   pub severity: Severity,
@@ -82,7 +82,7 @@ fn main() {
 }
 
 impl<S> Proxy<S> {
-  pub fn new(queue: SQS<S>) -> Self {
+  fn new(queue: SQS<S>) -> Self {
     Proxy {
       message_queue: queue,
     }
@@ -90,7 +90,7 @@ impl<S> Proxy<S> {
 }
 
 impl<S> SQS<S> {
-  pub fn new<T: Into<String>>(client: S, queue: T) -> Self {
+  fn new<T: Into<String>>(client: S, queue: T) -> Self {
     SQS {
       client: client,
       queue_url: queue.into(),
@@ -98,7 +98,9 @@ impl<S> SQS<S> {
   }
 }
 
-impl<S> Handler for Proxy<S> {
+impl<S> Handler for Proxy<S> 
+  where S: Sqs + Send + Sync + 'static,
+{
   fn handle(&self, req: &mut Request) -> IronResult<Response> {
     let data = req.get::<bodyparser::Struct<ClientEvent>>()
       .map_err(|err| IronError::new(err, (Status::BadRequest, "Invalid request data")))
