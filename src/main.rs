@@ -89,7 +89,8 @@ fn main() {
   // 1. Figure out how to handle AWS credentials in an acceptable way.
   // 2. Create a real SqsClient, authenticate, assume role, etc. as necessary.
   // 3. Write some tests.  Just make a best effort.
-  // 4. Test it out in AWS!
+  // 4. Throw in some logging.
+  // 5. Test it out in AWS!
   let sqs_client = SqsClient::new_with(
     rusoto_mock::MockRequestDispatcher::default(),
     rusoto_mock::MockCredentialsProvider,
