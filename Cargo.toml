@@ -5,10 +5,11 @@ authors = ["Emma Rose <emma.arcadia.rose@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-chrono = { version = "0.4", features = ["serde"] }
+bodyparser = "^0.8"
+chrono = { version = "^0.4", features = ["serde"] }
+clap = "^2.32"
 env_logger = "^0.6"
 iron = "^0.6"
-bodyparser = "^0.8"
 log = "^0.4"
 rusoto_core = "^0.36"
 rusoto_credential = "^0.15"
