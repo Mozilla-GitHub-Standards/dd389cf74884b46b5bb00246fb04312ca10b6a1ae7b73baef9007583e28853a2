@@ -100,7 +100,7 @@ fn main() {
 
   let matches = clap::App::new("mozdef-proxy")
     .version("0.1.0")
-    .author("Emma Rose <emrose@mozilla.com")
+    .author("Emma Rose <emrose@mozilla.com>")
     .about(ABOUT)
     .arg(clap::Arg::with_name("bind-address")
       .short("b")
