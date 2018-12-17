@@ -1,16 +1,16 @@
-# Welcome to serverless. Read the docs
-# https://serverless.com/framework/docs/
-
-# Serverless.yml is the configuration the CLI
-# uses to deploy your code to your provider of choice
-
-# The `service` block is the name of the service
 service: mozdef-proxy
 
-# The `provider` block defines where your service will be deployed
 provider:
   name: aws
   runtime: rust
+  region: ${opt:region, 'us-west-2'}
+  stackName: mozdef-proxy-deploy
+  apiName: mozdef-proxy-api
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - sqs:SendMessage
+      Resource: "arn:aws:sqs:${self:provider.region}::${opt:queue}"
 
 plugins:
   - serverless-rust
@@ -18,11 +18,9 @@ plugins:
 package:
   individually: true
 
-# The `functions` block defines what code to deploy
 functions:
   main:
     handler: mozdef-proxy
-    # The `events` block defines how to trigger the handler.helloWorld code
     events:
       - http:
           path: /
