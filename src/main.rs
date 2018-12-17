@@ -13,10 +13,7 @@ use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 
 
-const ABOUT: &'static str = "Queues arbitrary events into SQS for consumption by MozDef.
-
-Performs authentication by reading the standard AWS environment variables
-AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY and AWS_SESSION_TOKEN.";
+const ABOUT: &'static str = "Queues arbitrary events into SQS for consumption by MozDef.";
 
 /// The value of the `source` field in a `MozDefEvent`.
 const MOZDEF_SOURCE: &'static str  = "mozdef-proxy";
@@ -127,7 +124,7 @@ fn main() {
     _ => panic!("Missing a required CLI parameter."),
   };
 
-  let credentials = rusoto_credential::EnvironmentProvider::default();
+  let credentials = rusoto_credential::ContainerProvider::new();
   let requests = rusoto_core::request::HttpClient::new()
     .expect("Could not create a signed request dispatcher for AWS.");
   let sqs_client = SqsClient::new_with(
