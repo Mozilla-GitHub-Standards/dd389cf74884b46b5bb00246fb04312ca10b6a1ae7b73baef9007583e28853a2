@@ -5,15 +5,15 @@ provider:
   runtime: rust
   region: ${opt:region, 'us-west-2'}
   stackName: mozdef-proxy-deploy
-  apiName: mozdef-proxy-api
+  apiName: mozdef-proxy-ap
+  environment:
+    BIND_ADDRESS: ${opt:bind-to, '0.0.0.0:80'}
+    SQS_QUEUE_NAME: ${opt:queue}
   iamRoleStatements:
     - Effect: Allow
       Action:
         - sqs:SendMessage
       Resource: "arn:aws:sqs:${self:provider.region}::${opt:queue}"
-
-plugins:
-  - serverless-rust
 
 package:
   individually: true
@@ -25,3 +25,6 @@ functions:
       - http:
           path: /
           method: POST
+
+plugins:
+  - serverless-rust

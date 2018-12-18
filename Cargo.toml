@@ -7,7 +7,6 @@ edition = "2018"
 [dependencies]
 bodyparser = "^0.8"
 chrono = { version = "^0.4", features = ["serde"] }
-clap = "^2.32"
 env_logger = "^0.6"
 iron = "^0.6"
 log = "^0.4"
