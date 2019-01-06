@@ -13,6 +13,8 @@ use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 
 
+const ABOUT: &'static str = "Queues arbitrary events into SQS for consumption by MozDef.";
+
 /// The value of the `source` field in a `MozDefEvent`.
 const MOZDEF_SOURCE: &'static str  = "mozdef-proxy";
 
@@ -86,16 +88,39 @@ struct MozDefEvent {
 }
 
 fn main() {
+  // TODO:
+  // 1. Test it out in AWS!
+
   let mut logger = Builder::from_default_env();
   logger.target(Target::Stderr);
   logger.init();
 
+  let matches = clap::App::new("mozdef-proxy")
+    .version("0.1.0")
+    .author("Emma Rose <emrose@mozilla.com>")
+    .about(ABOUT)
+    .arg(clap::Arg::with_name("bind-address")
+      .short("b")
+      .long("bind-address")
+      .value_name("bind-address")
+      .takes_value(true)
+      .required(false)
+      .help("IP:PORT - The local address to bind the server to"))
+    .arg(clap::Arg::with_name("queue")
+      .short("q")
+      .long("queue")
+      .value_name("queue")
+      .takes_value(true)
+      .required(true)
+      .help("URL/ARN of the SQS queue to write to"))
+    .get_matches();
+
   let expected_params = (
-    std::env::var("BIND_ADDRESS").ok(),
-    std::env::var("SQS_QUEUE_NAME").ok(),
+    matches.value_of("bind-address").unwrap_or("0.0.0.0:80"),
+    matches.value_of("queue"),
   );
   let (address, queue) = match expected_params {
-    (Some(address), Some(queue)) => (address, queue),
+    (address, Some(queue)) => (address, queue),
     _ => panic!("Missing a required CLI parameter."),
   };
 
@@ -106,12 +131,12 @@ fn main() {
     requests,
     credentials,
     Default::default());
+  let sqs = SQS::new(sqs_client, queue);
+  let proxy = Proxy::new(sqs);
 
   info!("Running proxy server on {}", address);
   info!("Writing to {}", queue);
 
-  let sqs = SQS::new(sqs_client, queue);
-  let proxy = Proxy::new(sqs);
   iron::Iron::new(proxy).http(address).unwrap();
 }
 
