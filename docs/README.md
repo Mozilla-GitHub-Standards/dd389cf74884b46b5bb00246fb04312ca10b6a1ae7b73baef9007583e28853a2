@@ -22,32 +22,15 @@ POST /
 
 #### Request
 
-```typescript
-// Vulnerability is a container type for descriptions of vulnerable
-// packages found on a host.
-interface Vulnerability {
-  // A descriptive name/type for the data.
-  category: string;
-  // Fully-qualified domain name of the sender
-  hostname: string;
-  // One of DEBUG, INFO, NOTICE, WARNING, ERROR, CRITICAL, ALERT, EMERGENCY
-  severity: string;
-  // The name of the process sending the log
-  process: string;
-  // A human-readable explanation of the event data
-  summary: string;
-  // An array of string tags to associate with the event
-  tags: Array<string>;
-  // Any JSON-serialized data associated with the event
-  details: object;
-}
-
-// Expected body of a request.
-interface Request {
-  // An array of descriptions of vulns affecting a host
-  vulnerabilities: Array<Vulnerability>;
-}
-```
+| Name | Type | Description | Example |
+| ---- | ---- | ----------- | ------- |
+| category | string | A descriptive name/type for the data | vulnerability |
+| hostname | string | Fully-qualified domain name of the sender | server.example.com |
+| severity | string | One of DEBUG, INFO, NOTICE, WARNING, ERROR, CRITICAL, ALERT, EMERGENCY | WARNING |
+| process  | string | The name of the process sending the log | patchesscanner |
+| summary  | string | A human-readable explanation of the event data | "results of vuln scan" |
+| tags     | []string | An array of string tags to associate with the event | `["vulnerability", "clair"]` |
+| details  | object | Any JSON-serialized data associated with the event | `{"vulnerabilities": [...]}` |
 
 #### Response
 
