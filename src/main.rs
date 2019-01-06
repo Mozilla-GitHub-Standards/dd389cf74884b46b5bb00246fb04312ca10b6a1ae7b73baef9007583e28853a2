@@ -88,40 +88,17 @@ struct MozDefEvent {
 }
 
 fn main() {
-  // TODO:
-  // 1. Test it out in AWS!
-
   let mut logger = Builder::from_default_env();
   logger.target(Target::Stderr);
   logger.init();
 
-  let matches = clap::App::new("mozdef-proxy")
-    .version("0.1.0")
-    .author("Emma Rose <emrose@mozilla.com>")
-    .about(ABOUT)
-    .arg(clap::Arg::with_name("bind-address")
-      .short("b")
-      .long("bind-address")
-      .value_name("bind-address")
-      .takes_value(true)
-      .required(false)
-      .help("IP:PORT - The local address to bind the server to"))
-    .arg(clap::Arg::with_name("queue")
-      .short("q")
-      .long("queue")
-      .value_name("queue")
-      .takes_value(true)
-      .required(true)
-      .help("URL/ARN of the SQS queue to write to"))
-    .get_matches();
-
   let expected_params = (
-    matches.value_of("bind-address").unwrap_or("0.0.0.0:80"),
-    matches.value_of("queue"),
+    std::env::var("BIND_ADDRESS").ok(),
+    std::env::var("QUEUE_NAME").ok(),
   );
   let (address, queue) = match expected_params {
-    (address, Some(queue)) => (address, queue),
-    _ => panic!("Missing a required CLI parameter."),
+    (Some(address), Some(queue)) => (address, queue),
+    _ => panic!("Missing a required environment variable."),
   };
 
   let credentials = rusoto_credential::ContainerProvider::new();
